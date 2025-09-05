@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -57,19 +56,100 @@
   .img-preview{width:150px; height:150px; border-radius:10px; overflow:hidden; border:1px solid #e6eef5; display:flex; align-items:center; justify-content:center; background:#fafafa}
   .img-preview img{width:100%; height:100%; object-fit:cover}
 
-  /* ---------- Product cards ---------- */
+  /* ---------- Product cards with enhanced image interactions ---------- */
   .grid{display:flex; flex-wrap:wrap; gap:18px}
   .product-card{width:340px; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 12px 28px rgba(2,6,23,.06); display:flex; flex-direction:column}
   .product-top{display:flex; gap:12px; padding:12px}
-  .thumb{width:120px; height:120px; border-radius:8px; overflow:hidden; background:#f3f4f6; border:1px solid #eef2f6}
-  .thumb img{width:100%; height:100%; object-fit:cover}
+  .thumb{
+    width:120px; height:120px; border-radius:8px; overflow:hidden; background:#f3f4f6; border:1px solid #eef2f6;
+    position:relative; cursor:pointer;
+  }
+  .thumb img{
+    width:100%; height:100%; object-fit:cover;
+    transition:transform .3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  /* Zoom hover effect */
+  .thumb:hover img{
+    transform:scale(1.1);
+  }
+  /* Zoom hint overlay */
+  .thumb::after{
+    content:'🔍 Click para ampliar';
+    position:absolute; bottom:0; left:0; right:0;
+    background:linear-gradient(transparent, rgba(0,0,0,0.8));
+    color:#fff; font-size:10px; text-align:center; padding:8px 4px;
+    opacity:0; transition:opacity .3s;
+  }
+  .thumb:hover::after{
+    opacity:1;
+  }
+
   .product-info{flex:1}
   .product-info h4{margin:0 0 4px}
   .muted{color:#64748b; font-size:13px}
 
   .product-actions{display:flex; gap:8px; padding:10px; border-top:1px solid #f1f5f9; justify-content:flex-end}
 
-  /* ---------- Category lists ---------- */
+  /* ---------- Enhanced Lightbox Modal ---------- */
+  .lightbox{
+    position:fixed; top:0; left:0; width:100vw; height:100vh;
+    background:rgba(0,0,0,0.95); z-index:9999;
+    display:none; align-items:center; justify-content:center;
+    cursor:zoom-out;
+  }
+  .lightbox.active{display:flex}
+  
+  .lightbox-content{
+    position:relative; max-width:95vw; max-height:95vh;
+    display:flex; align-items:center; justify-content:center;
+  }
+  
+  .lightbox-image{
+    max-width:100%; max-height:100%; object-fit:contain;
+    border-radius:8px; box-shadow:0 20px 40px rgba(0,0,0,0.5);
+    transition:transform .3s ease;
+    cursor:grab;
+  }
+  
+  .lightbox-image:active{cursor:grabbing}
+  
+  /* Close button */
+  .lightbox-close{
+    position:absolute; top:20px; right:20px;
+    background:rgba(255,255,255,0.2); border:none; border-radius:50%;
+    width:50px; height:50px; color:#fff; font-size:24px; font-weight:bold;
+    cursor:pointer; backdrop-filter:blur(10px);
+    transition:background .3s, transform .2s;
+  }
+  .lightbox-close:hover{
+    background:rgba(255,255,255,0.3); transform:scale(1.1);
+  }
+
+  /* Info overlay */
+  .lightbox-info{
+    position:absolute; bottom:0; left:0; right:0;
+    background:linear-gradient(transparent, rgba(0,0,0,0.8));
+    color:#fff; padding:20px; text-align:center;
+    transform:translateY(100%); transition:transform .3s;
+  }
+  .lightbox.show-info .lightbox-info{transform:translateY(0)}
+  
+  /* Zoom controls */
+  .zoom-controls{
+    position:absolute; bottom:20px; right:20px;
+    display:flex; gap:8px; flex-direction:column;
+  }
+  .zoom-btn{
+    background:rgba(255,255,255,0.2); border:none; border-radius:50%;
+    width:40px; height:40px; color:#fff; font-size:18px; font-weight:bold;
+    cursor:pointer; backdrop-filter:blur(10px);
+    transition:background .3s, transform .2s;
+  }
+  .zoom-btn:hover{
+    background:rgba(255,255,255,0.3); transform:scale(1.1);
+  }
+
+  /* Category lists ---------- */
   .list{padding:8px; background:#fff; border-radius:10px; border:1px solid #edf2f7; max-height:320px; overflow:auto}
   .list-item{display:flex; justify-content:space-between; padding:8px; align-items:center; border-bottom:1px dashed #f1f5f9}
   .list-item:last-child{border-bottom:none}
@@ -97,11 +177,12 @@
   /* ---------- Print styles ---------- */
   @media print{
     body{background:#fff; color:#000}
-    header, .tabs, .toolbar, .btn, input, textarea, .toast, .url-info { display: none !important; }
+    header, .tabs, .toolbar, .btn, input, textarea, .toast, .url-info, .lightbox { display: none !important; }
     .container{max-width:100%; padding:0; margin:0}
     .product-card{page-break-inside:avoid; break-inside:avoid; box-shadow:none; border:1px solid #ccc}
     .grid{display:flex; flex-wrap:wrap; gap:10px}
     .product-card{width:45%; margin:6px}
+    .thumb::after{display:none}
     @page { margin: 12mm; }
   }
 
@@ -110,10 +191,30 @@
     .form-grid{grid-template-columns:1fr}
     .product-card{width:100%}
     .url-info { display: none; }
+    .lightbox-close{top:10px; right:10px; width:40px; height:40px; font-size:20px}
+    .zoom-controls{bottom:10px; right:10px}
+    .zoom-btn{width:35px; height:35px; font-size:16px}
   }
 </style>
 </head>
 <body>
+  <!-- Lightbox Modal -->
+  <div id="lightbox" class="lightbox">
+    <button class="lightbox-close" id="lightboxClose">&times;</button>
+    <div class="lightbox-content">
+      <img id="lightboxImage" class="lightbox-image" alt="Imagen ampliada">
+      <div class="lightbox-info" id="lightboxInfo">
+        <h3 id="lightboxTitle">Nombre del producto</h3>
+        <p id="lightboxDescription">Descripción del producto</p>
+      </div>
+    </div>
+    <div class="zoom-controls">
+      <button class="zoom-btn" id="zoomIn">+</button>
+      <button class="zoom-btn" id="zoomOut">−</button>
+      <button class="zoom-btn" id="zoomReset">⌂</button>
+    </div>
+  </div>
+
   <header>
     <div class="header-inner">
       <img id="logo" alt="Logo">
@@ -294,6 +395,11 @@ const PLACEHOLDER = 'data:image/svg+xml;utf8,' + encodeURIComponent(
 const $ = sel => document.querySelector(sel);
 const $$ = sel => Array.from(document.querySelectorAll(sel));
 
+// Lightbox variables
+let currentZoom = 1;
+let isDragging = false;
+let startX, startY, currentX = 0, currentY = 0;
+
 // Mostrar URL actual en el header
 function updateUrlDisplay() {
   const urlElement = $('#currentUrl');
@@ -308,6 +414,140 @@ function showToast(msg, type='ok', ms=2000){
   t.className = 'toast ' + (type==='ok'?'ok': type==='warn'?'warn':'err');
   t.classList.add('show');
   setTimeout(()=> t.classList.remove('show'), ms);
+}
+
+/* ----------------------------
+   Enhanced Lightbox functionality
+   ---------------------------- */
+function initLightbox() {
+  const lightbox = $('#lightbox');
+  const lightboxImage = $('#lightboxImage');
+  const lightboxClose = $('#lightboxClose');
+  const lightboxTitle = $('#lightboxTitle');
+  const lightboxDescription = $('#lightboxDescription');
+  const zoomIn = $('#zoomIn');
+  const zoomOut = $('#zoomOut');
+  const zoomReset = $('#zoomReset');
+
+  // Open lightbox
+  function openLightbox(imageSrc, title, description) {
+    lightboxImage.src = imageSrc;
+    lightboxTitle.textContent = title;
+    lightboxDescription.textContent = description;
+    lightbox.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    resetImagePosition();
+    
+    // Show info after delay
+    setTimeout(() => lightbox.classList.add('show-info'), 500);
+  }
+
+  // Close lightbox
+  function closeLightbox() {
+    lightbox.classList.remove('active', 'show-info');
+    document.body.style.overflow = '';
+    resetImagePosition();
+  }
+
+  // Reset image position and zoom
+  function resetImagePosition() {
+    currentZoom = 1;
+    currentX = 0;
+    currentY = 0;
+    updateImageTransform();
+  }
+
+  // Update image transform
+  function updateImageTransform() {
+    lightboxImage.style.transform = `translate(${currentX}px, ${currentY}px) scale(${currentZoom})`;
+  }
+
+  // Zoom controls
+  zoomIn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    currentZoom = Math.min(currentZoom * 1.5, 4);
+    updateImageTransform();
+  });
+
+  zoomOut.addEventListener('click', (e) => {
+    e.stopPropagation();
+    currentZoom = Math.max(currentZoom / 1.5, 0.5);
+    updateImageTransform();
+  });
+
+  zoomReset.addEventListener('click', (e) => {
+    e.stopPropagation();
+    resetImagePosition();
+  });
+
+  // Mouse drag functionality
+  lightboxImage.addEventListener('mousedown', (e) => {
+    if (currentZoom <= 1) return;
+    isDragging = true;
+    startX = e.clientX - currentX;
+    startY = e.clientY - currentY;
+    lightboxImage.style.cursor = 'grabbing';
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    e.preventDefault();
+    currentX = e.clientX - startX;
+    currentY = e.clientY - startY;
+    updateImageTransform();
+  });
+
+  document.addEventListener('mouseup', () => {
+    isDragging = false;
+    lightboxImage.style.cursor = currentZoom > 1 ? 'grab' : 'zoom-out';
+  });
+
+  // Touch support for mobile
+  let lastTouchDistance = 0;
+  lightboxImage.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 2) {
+      lastTouchDistance = Math.sqrt(
+        Math.pow(e.touches[0].clientX - e.touches[1].clientX, 2) +
+        Math.pow(e.touches[0].clientY - e.touches[1].clientY, 2)
+      );
+    }
+  });
+
+  lightboxImage.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      const currentDistance = Math.sqrt(
+        Math.pow(e.touches[0].clientX - e.touches[1].clientX, 2) +
+        Math.pow(e.touches[0].clientY - e.touches[1].clientY, 2)
+      );
+      if (lastTouchDistance > 0) {
+        const scale = currentDistance / lastTouchDistance;
+        currentZoom = Math.min(Math.max(currentZoom * scale, 0.5), 4);
+        updateImageTransform();
+      }
+      lastTouchDistance = currentDistance;
+    }
+  });
+
+  // Close events
+  lightboxClose.addEventListener('click', closeLightbox);
+  lightbox.addEventListener('click', (e) => {
+    if (e.target === lightbox) closeLightbox();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeLightbox();
+  });
+
+  // Mouse wheel zoom
+  lightbox.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    currentZoom = Math.min(Math.max(currentZoom * delta, 0.5), 4);
+    updateImageTransform();
+  });
+
+  // Export function to be used globally
+  window.openLightbox = openLightbox;
 }
 
 /* ----------------------------
@@ -406,6 +646,9 @@ const resetBtn = $('#resetBtn');
    Inicialización UI
    ---------------------------- */
 function initUI(){
+  // Initialize lightbox
+  initLightbox();
+  
   // Actualizar URL display
   updateUrlDisplay();
   
@@ -608,10 +851,18 @@ function productHtml(p, mode='editor'){
         <button class="btn danger" data-delete="${p.id}">Eliminar</button>
       </div>`;
   }
+  
+  // Enhanced thumbnail with lightbox functionality
+  const thumbHtml = `
+    <div class="thumb" data-lightbox='{"src":"${p.imagen || PLACEHOLDER}", "title":"${escapeHtml(p.nombre)}", "description":"${escapeHtml(p.descripcion || '')}"}'>
+      <img src="${p.imagen || PLACEHOLDER}" alt="${escapeHtml(p.nombre)}">
+    </div>
+  `;
+  
   return `
     <div class="product-card" data-id="${p.id}">
       <div class="product-top">
-        <div class="thumb"><img src="${p.imagen || PLACEHOLDER}" alt="${escapeHtml(p.nombre)}"></div>
+        ${thumbHtml}
         <div class="product-info">
           <h4>${escapeHtml(p.nombre)}</h4>
           <div class="muted">${p.codigo? 'Código: ' + escapeHtml(p.codigo): ''}</div>
@@ -624,10 +875,14 @@ function productHtml(p, mode='editor'){
   `;
 }
 
-function escapeHtml(s){ if(!s) return ''; return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
+function escapeHtml(s){ if(!s) return ''; return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;'); }
 
 function renderEditorList(){
   editorList.innerHTML = state.productos.map(p => productHtml(p,'editor')).join('') || '<div class="muted">No hay productos</div>';
+  
+  // Bind lightbox events to thumbnails
+  bindLightboxEvents(editorList);
+  
   // bind edit/delete
   editorList.querySelectorAll('[data-edit]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
@@ -655,6 +910,24 @@ function renderEditorList(){
       persistState();
       renderEditorList(); renderCatalog();
       showToast('Producto eliminado','warn');
+    });
+  });
+}
+
+/* ----------------------------
+   Bind lightbox events
+   ---------------------------- */
+function bindLightboxEvents(container) {
+  container.querySelectorAll('[data-lightbox]').forEach(thumb => {
+    thumb.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      try {
+        const data = JSON.parse(thumb.getAttribute('data-lightbox'));
+        window.openLightbox(data.src, data.title, data.description);
+      } catch(err) {
+        console.error('Error opening lightbox:', err);
+      }
     });
   });
 }
@@ -698,6 +971,10 @@ function renderCatalog(fromTab=false){
     html += `</div>`;
   }
   catalogContainer.innerHTML = html || '<div class="muted">No hay productos para mostrar</div>';
+  
+  // Bind lightbox events to catalog
+  bindLightboxEvents(catalogContainer);
+  
   if(fromTab) window.scrollTo({top:0, behavior:'smooth'});
 }
 
